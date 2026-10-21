@@ -344,7 +344,7 @@ class TrainingService:
             run.save()
             raise
 
-    def _build_model(self, input_shape: Tuple[int, int], keras, Sequential, LSTM, Dense, Dropout, Adam) -> keras.Model:
+    def _build_model(self, input_shape: Tuple[int, int], keras, Sequential, LSTM, Dense, Dropout, Adam) -> 'keras.Model':
         model = Sequential([
             LSTM(
                 self.config['lstm_units'],
