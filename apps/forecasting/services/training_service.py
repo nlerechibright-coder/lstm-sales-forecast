@@ -10,12 +10,6 @@ from django.conf import settings
 from django.db import transaction
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import mean_absolute_error, mean_squared_error
-import tensorflow as tf
-from tensorflow import keras
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import LSTM, Dense, Dropout
-from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
-from tensorflow.keras.optimizers import Adam
 
 from sales.models import Sales
 from forecasting.models import ForecastModel, ForecastRun, FeatureRegistry
@@ -44,23 +38,6 @@ class LogCapture:
     
     def get_logs(self):
         return self.stdout.getvalue() + self.stderr.getvalue()
-
-
-class ProgressCallback(keras.callbacks.Callback):
-    """Custom Keras callback to push epoch progress to Redis."""
-    def __init__(self, run_id, total_epochs):
-        super().__init__()
-        self.run_id = run_id
-        self.total_epochs = total_epochs
-
-    def on_epoch_begin(self, epoch, logs=None):
-        if self.run_id:
-            update_run_progress(self.run_id, epoch + 1, self.total_epochs, f"Training Epoch {epoch + 1}/{self.total_epochs}")
-
-    def on_epoch_end(self, epoch, logs=None):
-        if self.run_id and logs:
-            val_loss = logs.get('val_loss', 0)
-            update_run_progress(self.run_id, epoch + 1, self.total_epochs, f"Epoch {epoch + 1}/{self.total_epochs} | Val Loss: {val_loss:.4f}")
 
 
 class TrainingService:
@@ -175,6 +152,38 @@ class TrainingService:
         }
 
     def train(self, run_id: Optional[int] = None) -> Dict:
+        # =====================================================================
+        # LAZY LOAD TENSORFLOW HERE
+        # This prevents TensorFlow from loading into memory on every web request,
+        # which was causing Out-Of-Memory (SIGKILL) crashes on Render's free tier.
+        # =====================================================================
+        import tensorflow as tf
+        from tensorflow import keras
+        from tensorflow.keras.models import Sequential
+        from tensorflow.keras.layers import LSTM, Dense, Dropout
+        from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
+        from tensorflow.keras.optimizers import Adam
+
+        # Define ProgressCallback locally so it has access to the lazily-loaded keras
+        class ProgressCallback(keras.callbacks.Callback):
+            def __init__(self, run_id, total_epochs):
+                super().__init__()
+                self.run_id = run_id
+                self.total_epochs = total_epochs
+
+            def on_epoch_begin(self, epoch, logs=None):
+                if self.run_id:
+                    update_run_progress(self.run_id, epoch + 1, self.total_epochs, f"Training Epoch {epoch + 1}/{self.total_epochs}")
+
+            def on_epoch_end(self, epoch, logs=None):
+                if self.run_id and logs:
+                    val_loss = logs.get('val_loss', 0)
+                    update_run_progress(self.run_id, epoch + 1, self.total_epochs, f"Epoch {epoch + 1}/{self.total_epochs} | Val Loss: {val_loss:.4f}")
+
+        # =====================================================================
+        # END LAZY LOAD
+        # =====================================================================
+
         run = self._get_or_create_run(run_id)
         
         self._log(f"Starting training for company {self.company_id}")
@@ -218,7 +227,7 @@ class TrainingService:
             self._log(f"Train/Val split: {len(X_train)} training samples, {len(X_val)} validation samples")
 
             self._log("Building LSTM model...")
-            self.model = self._build_model(input_shape=(X.shape[1], X.shape[2]))
+            self.model = self._build_model(input_shape=(X.shape[1], X.shape[2]), keras=keras, Sequential=Sequential, LSTM=LSTM, Dense=Dense, Dropout=Dropout, Adam=Adam)
 
             model_dir = os.path.join(settings.MEDIA_ROOT, 'forecast_models', str(self.company_id))
             os.makedirs(model_dir, exist_ok=True)
@@ -335,7 +344,7 @@ class TrainingService:
             run.save()
             raise
 
-    def _build_model(self, input_shape: Tuple[int, int]) -> keras.Model:
+    def _build_model(self, input_shape: Tuple[int, int], keras, Sequential, LSTM, Dense, Dropout, Adam) -> keras.Model:
         model = Sequential([
             LSTM(
                 self.config['lstm_units'],
