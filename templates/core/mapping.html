@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+{% load custom_filters %}
+
+{% block title %}Map Sales Columns{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'upload_sales' %}">Sales History Upload</a></li>
+            <li class="breadcrumb-item active">Map Columns</li>
+        </ol>
+    </nav>
+
+    <div class="row justify-content-center">
+        <div class="col-xl-10">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-primary text-white py-3">
+                    <h4 class="mb-0">Map Your Columns</h4>
+                    <small class="text-white-50">Job #{{ job.id }} - {{ job.file.name }}</small>
+                </div>
+                <div class="card-body p-4">
+                    <p class="text-muted">Match each uploaded column to the correct system field. Required fields are marked with <span class="text-danger">*</span>.</p>
+
+                    <form id="mappingForm" method="post" action="{% url 'confirm_mapping' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="job_id" value="{{ job.id }}">
+
+                        <div class="table-responsive mb-3">
+                            <table class="table table-bordered align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Your Column Header</th>
+                                        <th>System Field</th>
+                                        <th>Suggestion</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for header in headers %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ header }}</strong>
+                                            <input type="hidden" name="headers[]" value="{{ header }}">
+                                        </td>
+                                        <td>
+                                            <select class="form-select" name="map_{{ header }}" id="select_{{ forloop.counter }}">
+                                                <option value="">Skip this column</option>
+                                                {% for field_value, field_label in known_fields %}
+                                                <option value="{{ field_value }}"
+                                                    {% if confirmed_mappings|dict_get:header == field_value %}selected{% endif %}
+                                                    {% if suggestions|dict_get:header|get_item:'suggested_field' == field_value %}selected{% endif %}>
+                                                    {{ field_label }}{% if field_value == 'date' or field_value == 'sales_quantity' %} *{% endif %}
+                                                </option>
+                                                {% endfor %}
+                                            </select>
+                                        </td>
+                                        <td>
+                                            {% with suggestion=suggestions|dict_get:header %}
+                                                {% if suggestion.suggested_field %}
+                                                    <span class="badge bg-{% if suggestion.confidence > 0.8 %}success{% elif suggestion.confidence > 0.5 %}warning text-dark{% else %}secondary{% endif %}">
+                                                        {{ suggestion.suggested_field }} ({{ suggestion.confidence }})
+                                                    </span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">No match</span>
+                                                {% endif %}
+                                            {% endwith %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div id="errorAlert" class="alert alert-danger d-none" role="alert"></div>
+
+                        <div class="d-flex justify-content-between flex-wrap gap-2">
+                            <a href="{% url 'upload_sales' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-1"></i>Upload Different File
+                            </a>
+                            <button type="submit" class="btn btn-primary" id="confirmButton">
+                                <i class="bi bi-check-circle me-1"></i>Confirm Mapping and Import
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('mappingForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const form = e.target;
+    const formData = new FormData(form);
+    const button = document.getElementById('confirmButton');
+    const alert = document.getElementById('errorAlert');
+
+    alert.classList.add('d-none');
+    button.disabled = true;
+    button.innerHTML = '<span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Importing...';
+
+    fetch(form.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            window.location.href = data.redirect_url;
+        } else {
+            alert.textContent = data.error;
+            alert.classList.remove('d-none');
+            button.disabled = false;
+            button.innerHTML = '<i class="bi bi-check-circle me-1"></i>Confirm Mapping and Import';
+        }
+    })
+    .catch(() => {
+        alert.textContent = 'An error occurred while confirming the mapping. Please try again.';
+        alert.classList.remove('d-none');
+        button.disabled = false;
+        button.innerHTML = '<i class="bi bi-check-circle me-1"></i>Confirm Mapping and Import';
+    });
+});
+</script>
+{% endblock %}

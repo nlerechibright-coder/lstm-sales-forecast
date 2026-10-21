@@ -1,0 +1,222 @@
+{% extends 'base.html' %}
+
+{% block title %}Add Product{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'inventory_dashboard' %}">Inventory</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'list_products' %}">Products</a></li>
+            <li class="breadcrumb-item active">Add Product</li>
+        </ol>
+    </nav>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="fw-bold">
+                <i class="bi bi-plus-circle me-2"></i>Add New Product
+            </h2>
+            <p class="text-muted">Add a new product to your inventory catalog</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        {% if form.errors %}
+                        <div class="alert alert-danger">
+                            <strong>Please correct the following errors:</strong>
+                            <ul class="mb-0 mt-2">
+                                {% for field in form %}
+                                    {% for error in field.errors %}
+                                        <li>{{ field.label }}: {{ error }}</li>
+                                    {% endfor %}
+                                {% endfor %}
+                                {% for error in form.non_field_errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+
+                        <!-- Basic Information -->
+                        <h5 class="fw-bold mb-3"><i class="bi bi-info-circle me-2"></i>Basic Information</h5>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.name.id_for_label }}" class="form-label">
+                                Product Name <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" name="name" id="{{ form.name.id_for_label }}" 
+                                   class="form-control {% if form.name.errors %}is-invalid{% endif %}"
+                                   value="{{ form.name.value|default:'' }}" required>
+                            {% if form.name.errors %}
+                                <div class="invalid-feedback">{{ form.name.errors.0 }}</div>
+                            {% endif %}
+                            <div class="form-text">Enter the full product name</div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.sku.id_for_label }}" class="form-label">
+                                    SKU / Product Code
+                                </label>
+                                <input type="text" name="sku" id="{{ form.sku.id_for_label }}" 
+                                       class="form-control {% if form.sku.errors %}is-invalid{% endif %}"
+                                       value="{{ form.sku.value|default:'' }}">
+                                {% if form.sku.errors %}
+                                    <div class="invalid-feedback">{{ form.sku.errors.0 }}</div>
+                                {% endif %}
+                                <div class="form-text">Unique stock keeping unit (optional if auto-generate is enabled)</div>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.category.id_for_label }}" class="form-label">
+                                    Product Type
+                                </label>
+                                <select name="category" id="{{ form.category.id_for_label }}" 
+                                        class="form-select {% if form.category.errors %}is-invalid{% endif %}">
+                                    <option value="">-- Select Product Type --</option>
+                                    {% for cat in form.category.field.queryset %}
+                                        <option value="{{ cat.id }}" {% if form.category.value|stringformat:"s" == cat.id|stringformat:"s" %}selected{% endif %}>
+                                            {{ cat.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                {% if form.category.errors %}
+                                    <div class="invalid-feedback">{{ form.category.errors.0 }}</div>
+                                {% endif %}
+                                {% if not categories_exist %}
+                                    <div class="form-text text-warning">
+                                        No active product types are available. <a href="{% url 'category_add' %}">Create one first</a>.
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <!-- Pricing -->
+                        <h5 class="fw-bold mb-3"><i class="bi bi-currency-exchange me-2"></i>Pricing</h5>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.base_price.id_for_label }}" class="form-label">
+                                    Base Selling Price <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">NGN</span>
+                                    <input type="number" name="base_price" id="{{ form.base_price.id_for_label }}" 
+                                           class="form-control {% if form.base_price.errors %}is-invalid{% endif %}"
+                                           value="{{ form.base_price.value|default:'' }}" step="0.01" min="0" required>
+                                </div>
+                                {% if form.base_price.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.base_price.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.cost_price.id_for_label }}" class="form-label">
+                                    Cost Price
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">NGN</span>
+                                    <input type="number" name="cost_price" id="{{ form.cost_price.id_for_label }}" 
+                                           class="form-control {% if form.cost_price.errors %}is-invalid{% endif %}"
+                                           value="{{ form.cost_price.value|default:'' }}" step="0.01" min="0">
+                                </div>
+                                {% if form.cost_price.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.cost_price.errors.0 }}</div>
+                                {% endif %}
+                                <div class="form-text">Used for profit calculations</div>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <!-- Inventory -->
+                        <h5 class="fw-bold mb-3"><i class="bi bi-box-seam me-2"></i>Inventory</h5>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.current_stock.id_for_label }}" class="form-label">
+                                    Current Stock Level
+                                </label>
+                                <input type="number" name="current_stock" id="{{ form.current_stock.id_for_label }}" 
+                                       class="form-control {% if form.current_stock.errors %}is-invalid{% endif %}"
+                                       value="{{ form.current_stock.value|default:'0' }}" min="0">
+                                {% if form.current_stock.errors %}
+                                    <div class="invalid-feedback">{{ form.current_stock.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.reorder_level.id_for_label }}" class="form-label">
+                                    Reorder Level
+                                </label>
+                                <input type="number" name="reorder_level" id="{{ form.reorder_level.id_for_label }}" 
+                                       class="form-control {% if form.reorder_level.errors %}is-invalid{% endif %}"
+                                       value="{{ form.reorder_level.value|default:'10' }}" min="0">
+                                {% if form.reorder_level.errors %}
+                                    <div class="invalid-feedback">{{ form.reorder_level.errors.0 }}</div>
+                                {% endif %}
+                                <div class="form-text">Alert when stock falls below this level</div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" name="auto_generate_sku" id="{{ form.auto_generate_sku.id_for_label }}" 
+                                   class="form-check-input" {% if form.auto_generate_sku.value %}checked{% endif %}>
+                            <label class="form-check-label" for="{{ form.auto_generate_sku.id_for_label }}">
+                                Auto-generate SKU based on product type
+                            </label>
+                            <div class="form-text">If enabled, SKU will be automatically created from the product type prefix</div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'list_products' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle me-1"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle me-1"></i>Add Product
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h6 class="fw-bold mb-3"><i class="bi bi-info-circle me-2"></i>Quick Tips</h6>
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2">
+                            <i class="bi bi-check-circle text-success me-2"></i>
+                            <small>Set a reorder level to receive low stock alerts</small>
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-check-circle text-success me-2"></i>
+                            <small>Add cost price to enable profit calculations in forecasts</small>
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-check-circle text-success me-2"></i>
+                            <small>Use product types to organize your products</small>
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-check-circle text-success me-2"></i>
+                            <small>SKU must be unique within your company</small>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

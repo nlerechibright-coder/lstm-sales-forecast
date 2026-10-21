@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Purchase Orders{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <div>
+                <h2 class="fw-bold"><i class="bi bi-cart-check me-2"></i>Purchase Orders</h2>
+                <p class="text-muted mb-0">{{ total_orders }} order{{ total_orders|pluralize }}</p>
+            </div>
+            <a href="{% url 'purchase_order_add' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-1"></i>Create PO
+            </a>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <form method="get" class="row g-3 align-items-end">
+                        <div class="col-md-5">
+                            <input type="text" name="q" class="form-control" placeholder="Search PO number or supplier..." value="{{ query }}">
+                        </div>
+                        <div class="col-md-3">
+                            <select name="status" class="form-select">
+                                <option value="">All Status</option>
+                                <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+                                <option value="ordered" {% if status_filter == 'ordered' %}selected{% endif %}>Ordered</option>
+                                <option value="received" {% if status_filter == 'received' %}selected{% endif %}>Received</option>
+                                <option value="cancelled" {% if status_filter == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-outline-primary w-100"><i class="bi bi-search"></i> Filter</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>PO Number</th>
+                                    <th>Supplier</th>
+                                    <th>Order Date</th>
+                                    <th>Items</th>
+                                    <th>Total</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for o in page_obj %}
+                                <tr>
+                                    <td><a href="{% url 'purchase_order_detail' o.id %}" class="fw-bold text-decoration-none">{{ o.order_number }}</a></td>
+                                    <td>{{ o.supplier.name }}</td>
+                                    <td>{{ o.order_date }}</td>
+                                    <td>{{ o.items_count }}</td>
+                                    <td class="fw-bold">₦{{ o.total_amount|floatformat:0|intcomma }}</td>
+                                    <td>
+                                        <span class="badge bg-{% if o.status == 'received' %}success{% elif o.status == 'ordered' %}primary{% elif o.status == 'cancelled' %}danger{% elif o.status == 'partial' %}info{% else %}warning{% endif %}">
+                                            {{ o.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'purchase_order_detail' o.id %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="7" class="text-center py-4 text-muted"><i class="bi bi-inbox fs-1 d-block mb-2"></i>No purchase orders.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if page_obj.has_other_pages %}
+    <div class="row mt-3">
+        <div class="col-12 d-flex justify-content-center">
+            <nav>
+                <ul class="pagination">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">Previous</a></li>
+                    {% endif %}
+                    <li class="page-item active"><span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span></li>
+                    {% if page_obj.has_next %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">Next</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block title %}Sales Interface{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="fw-bold">
+                <i class="bi bi-cart me-2"></i>Sales Recording Panel
+            </h2>
+            <p class="text-muted">Operator: <strong>{{ user.username }}</strong> | Company: {{ user.company.name }}</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h5 class="fw-bold"><i class="bi bi-receipt me-2"></i>Record New Transaction</h5>
+                    <p class="text-muted">Sales inputs, item selections, and markdown applications will build out from here.</p>
+                    <button class="btn btn-primary" disabled>
+                        <i class="bi bi-plus-circle me-1"></i>New Sale (Coming Soon)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block title %}Supervisor Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="fw-bold">
+                <i class="bi bi-speedometer2 me-2"></i>Supervisor Dashboard
+            </h2>
+            <p class="text-muted">Company Entity: <strong>{{ user.company.name }}</strong></p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h5 class="fw-bold"><i class="bi bi-clipboard-data me-2"></i>Data Audit & Logs</h5>
+                    <p class="text-muted">Review standard daily product sales listings and operational data tracking sheets.</p>
+                    <a href="{% url 'sales_list' %}" class="btn btn-outline-primary">
+                        <i class="bi bi-list me-1"></i>View Sales Data
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

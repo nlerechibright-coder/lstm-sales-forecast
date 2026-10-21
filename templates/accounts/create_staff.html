@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+
+{% block title %}Onboard Staff Member{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <h2 class="fw-bold mb-3">
+                        <i class="bi bi-person-plus me-2"></i>Onboard New Staff Member
+                    </h2>
+                    <p class="text-muted">
+                        Account will automatically be tied to organization: <strong>{{ user.company.name }}</strong>
+                    </p>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        {% if form.errors %}
+                        <div class="alert alert-danger">
+                            <ul class="mb-0">
+                                {% for field in form %}
+                                    {% for error in field.errors %}
+                                        <li>{{ field.label }}: {{ error }}</li>
+                                    {% endfor %}
+                                {% endfor %}
+                                {% for error in form.non_field_errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="mb-3">
+                            <label for="id_username" class="form-label">Username</label>
+                            <input type="text" name="username" id="id_username" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="id_email" class="form-label">Email</label>
+                            <input type="email" name="email" id="id_email" class="form-control">
+                        </div>
+                        <div class="mb-3">
+                            <label for="id_role" class="form-label">Role</label>
+                            <select name="role" id="id_role" class="form-select" required>
+                                <option value="manager">Manager</option>
+                                <option value="supervisor">Supervisor</option>
+                                <option value="sales_staff">Sales Staff</option>
+                            </select>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="id_password1" class="form-label">Password</label>
+                                <input type="password" name="password1" id="id_password1" class="form-control" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="id_password2" class="form-label">Confirm Password</label>
+                                <input type="password" name="password2" id="id_password2" class="form-control" required>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary flex-grow-1">Create Account</button>
+                            <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,197 @@
+{% extends 'base.html' %}
+
+{% block title %}Sales Entry{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="fw-bold">
+                <i class="bi bi-cart-plus me-2"></i>Sales Entry
+            </h2>
+            <p class="text-muted">Record a new sales transaction</p>
+        </div>
+    </div>
+
+    <form method="post" id="salesForm">
+        {% csrf_token %}
+        
+        {% if transaction_form.errors %}
+        <div class="alert alert-danger">
+            <strong>Please correct the following errors:</strong>
+            <ul class="mb-0 mt-2">
+                {% for field in transaction_form %}
+                    {% for error in field.errors %}
+                        <li>{{ field.label }}: {{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+                {% for error in transaction_form.non_field_errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <!-- Transaction Header -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white border-bottom-0 pt-4">
+                <h5 class="fw-bold"><i class="bi bi-info-circle me-2"></i>Transaction Details</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="{{ transaction_form.customer.id_for_label }}" class="form-label">Customer</label>
+                        {{ transaction_form.customer }}
+                        <div class="form-text">Leave empty for walk-in customer</div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="{{ transaction_form.payment_method.id_for_label }}" class="form-label">Payment Method</label>
+                        {{ transaction_form.payment_method }}
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="{{ transaction_form.notes.id_for_label }}" class="form-label">Notes</label>
+                        {{ transaction_form.notes }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Line Items -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white border-bottom-0 pt-4 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold mb-0"><i class="bi bi-list-ul me-2"></i>Line Items</h5>
+                <button type="button" class="btn btn-sm btn-primary" id="addItemBtn">
+                    <i class="bi bi-plus-circle me-1"></i>Add Item
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0" id="itemsTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 35%;">Product</th>
+                                <th style="width: 15%;">Quantity</th>
+                                <th style="width: 20%;">Unit Price</th>
+                                <th style="width: 15%;">Discount</th>
+                                <th style="width: 10%;">Subtotal</th>
+                                <th style="width: 5%;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="itemsBody">
+                            <!-- Items will be added here dynamically -->
+                        </tbody>
+                        <tfoot class="table-light">
+                            <tr>
+                                <td colspan="4" class="text-end fw-bold">Total:</td>
+                                <td class="fw-bold" id="grandTotal">₦0.00</td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="d-flex justify-content-between">
+            <a href="{% url 'transaction_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-x-circle me-1"></i>Cancel
+            </a>
+            <button type="submit" class="btn btn-primary btn-lg">
+                <i class="bi bi-check-circle me-1"></i>Complete Sale
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+const productsData = {{ products_json|safe }};
+let itemIndex = 0;
+
+document.getElementById('addItemBtn').addEventListener('click', function() {
+    addItemRow();
+});
+
+function addItemRow() {
+    const tbody = document.getElementById('itemsBody');
+    const row = document.createElement('tr');
+    row.id = `item-${itemIndex}`;
+    
+    row.innerHTML = `
+        <td>
+            <select name="product[]" class="form-select product-select" required onchange="updatePrice(${itemIndex})">
+                <option value="">Select Product</option>
+                ${productsData.map(p => `
+                    <option value="${p.id}" data-price="${p.price}" data-stock="${p.stock}">
+                        ${p.name} (${p.sku}) - Stock: ${p.stock}
+                    </option>
+                `).join('')}
+            </select>
+        </td>
+        <td>
+            <input type="number" name="quantity[]" class="form-control" min="1" required onchange="calculateSubtotal(${itemIndex})">
+        </td>
+        <td>
+            <input type="number" name="unit_price[]" class="form-control" step="0.01" required onchange="calculateSubtotal(${itemIndex})">
+        </td>
+        <td>
+            <input type="number" name="discount[]" class="form-control" step="0.01" value="0" onchange="calculateSubtotal(${itemIndex})">
+        </td>
+        <td>
+            <span class="subtotal-display">₦0.00</span>
+        </td>
+        <td>
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeItem(${itemIndex})">
+                <i class="bi bi-trash"></i>
+            </button>
+        </td>
+    `;
+    
+    tbody.appendChild(row);
+    itemIndex++;
+}
+
+function updatePrice(index) {
+    const select = document.querySelector(`#item-${index} .product-select`);
+    const selectedOption = select.options[select.selectedIndex];
+    const priceInput = document.querySelector(`#item-${index} input[name="unit_price[]"]`);
+    
+    if (selectedOption && selectedOption.dataset.price) {
+        priceInput.value = selectedOption.dataset.price;
+        calculateSubtotal(index);
+    }
+}
+
+function calculateSubtotal(index) {
+    const row = document.getElementById(`item-${index}`);
+    const quantity = parseFloat(row.querySelector('input[name="quantity[]"]').value) || 0;
+    const unitPrice = parseFloat(row.querySelector('input[name="unit_price[]"]').value) || 0;
+    const discount = parseFloat(row.querySelector('input[name="discount[]"]').value) || 0;
+    
+    const subtotal = (quantity * unitPrice) - discount;
+    row.querySelector('.subtotal-display').textContent = `₦${subtotal.toFixed(2)}`;
+    
+    calculateGrandTotal();
+}
+
+function calculateGrandTotal() {
+    let total = 0;
+    document.querySelectorAll('.subtotal-display').forEach(el => {
+        const value = parseFloat(el.textContent.replace('₦', '')) || 0;
+        total += value;
+    });
+    document.getElementById('grandTotal').textContent = `₦${total.toFixed(2)}`;
+}
+
+function removeItem(index) {
+    const row = document.getElementById(`item-${index}`);
+    if (row) {
+        row.remove();
+        calculateGrandTotal();
+    }
+}
+
+// Add first item row on page load
+addItemRow();
+</script>
+{% endblock %}

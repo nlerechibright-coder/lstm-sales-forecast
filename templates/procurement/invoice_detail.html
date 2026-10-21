@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% load forecast_filters %}
+
+{% block title %}Invoice {{ invoice.invoice_number }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'procurement_dashboard' %}">Procurement</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'invoice_list' %}">Invoices</a></li>
+            <li class="breadcrumb-item active">{{ invoice.invoice_number }}</li>
+        </ol>
+    </nav>
+
+    <div class="row mb-4">
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <div>
+                <h2 class="fw-bold">Invoice {{ invoice.invoice_number }}</h2>
+                <p class="text-muted mb-0">
+                    <span class="badge bg-{% if invoice.status == 'paid' %}success{% elif invoice.status == 'approved' %}primary{% elif invoice.status == 'rejected' %}danger{% else %}warning{% endif %} me-2">
+                        {{ invoice.get_status_display }}
+                    </span>
+                    {{ invoice.supplier.name }}
+                </p>
+            </div>
+            {% if invoice.invoice_file %}
+            <a href="{{ invoice.invoice_file.url }}" target="_blank" class="btn btn-primary">
+                <i class="bi bi-download me-1"></i>Download File
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 border-start border-primary border-4">
+                <div class="card-body">
+                    <p class="text-muted small mb-1">Invoice Date</p>
+                    <h5 class="fw-bold mb-0">{{ invoice.invoice_date }}</h5>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 border-start border-success border-4">
+                <div class="card-body">
+                    <p class="text-muted small mb-1">Total Amount</p>
+                    <h5 class="fw-bold mb-0">{{ invoice.total_amount|naira }}</h5>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 border-start border-info border-4">
+                <div class="card-body">
+                    <p class="text-muted small mb-1">Due Date</p>
+                    <h5 class="fw-bold mb-0">{{ invoice.due_date|default:"—" }}</h5>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 border-start border-warning border-4">
+                <div class="card-body">
+                    <p class="text-muted small mb-1">Tax Amount</p>
+                    <h5 class="fw-bold mb-0">{{ invoice.tax_amount|naira }}</h5>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if invoice.purchase_order %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h5 class="fw-bold"><i class="bi bi-link-45deg me-2"></i>Linked Purchase Order</h5>
+                    <a href="{% url 'purchase_order_detail' invoice.purchase_order.id %}" class="text-decoration-none">
+                        {{ invoice.purchase_order.order_number }} — {{ invoice.purchase_order.supplier.name }}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if invoice.notes %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h5 class="fw-bold"><i class="bi bi-sticky me-2"></i>Notes</h5>
+                    <p class="mb-0">{{ invoice.notes }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

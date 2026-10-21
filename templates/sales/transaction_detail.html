@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+
+{% block title %}Transaction #{{ transaction.id }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'transaction_list' %}">Transactions</a></li>
+            <li class="breadcrumb-item active">#{{ transaction.id }}</li>
+        </ol>
+    </nav>
+
+    <div class="row mb-4">
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <div>
+                <h2 class="fw-bold">
+                    <i class="bi bi-receipt me-2"></i>Transaction #{{ transaction.id }}
+                </h2>
+                <p class="text-muted mb-0">{{ transaction.transaction_date|date:"M d, Y H:i" }}</p>
+            </div>
+            <a href="{% url 'transaction_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i>Back to List
+            </a>
+        </div>
+    </div>
+
+    <!-- Transaction Details -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-bottom-0 pt-4">
+                    <h5 class="fw-bold"><i class="bi bi-info-circle me-2"></i>Transaction Info</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless mb-0">
+                        <tr>
+                            <td class="text-muted" style="width: 40%;">Customer</td>
+                            <td><strong>{{ transaction.customer.name|default:"Walk-in" }}</strong></td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Payment Method</td>
+                            <td>{{ transaction.payment_method.name|default:"—" }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Created By</td>
+                            <td>{{ transaction.created_by.get_full_name|default:transaction.created_by.username }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Notes</td>
+                            <td>{{ transaction.notes|default:"—" }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-bottom-0 pt-4">
+                    <h5 class="fw-bold"><i class="bi bi-cash-stack me-2"></i>Financial Summary</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless mb-0">
+                        <tr>
+                            <td class="text-muted" style="width: 40%;">Total Amount</td>
+                            <td><strong class="text-primary fs-4">₦{{ transaction.total_amount|floatformat:2 }}</strong></td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Total Discount</td>
+                            <td>₦{{ transaction.total_discount|floatformat:2 }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Items Count</td>
+                            <td>{{ transaction.items.count }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Line Items -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom-0 pt-4">
+                    <h5 class="fw-bold"><i class="bi bi-list-ul me-2"></i>Line Items</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Product</th>
+                                    <th>SKU</th>
+                                    <th>Category</th>
+                                    <th>Quantity</th>
+                                    <th>Unit Price</th>
+                                    <th>Discount</th>
+                                    <th>Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in items %}
+                                <tr>
+                                    <td><strong>{{ item.product.name }}</strong></td>
+                                    <td><code>{{ item.product.sku }}</code></td>
+                                    <td>{{ item.product.category.name|default:"—" }}</td>
+                                    <td>{{ item.quantity }}</td>
+                                    <td>₦{{ item.unit_price|floatformat:2 }}</td>
+                                    <td>₦{{ item.discount|floatformat:2 }}</td>
+                                    <td><strong>₦{{ item.subtotal|floatformat:2 }}</strong></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

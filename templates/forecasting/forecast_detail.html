@@ -1,0 +1,467 @@
+{% extends 'base.html' %}
+
+{% block title %}Forecast Detail — {{ forecast.forecast_date }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'forecasting_dashboard' %}">ML Pipeline</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'forecast_list' %}">Forecasts</a></li>
+            <li class="breadcrumb-item active">{{ forecast.forecast_date }}</li>
+        </ol>
+    </nav>
+
+    <div class="row mb-4">
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <div>
+                <h2 class="fw-bold">
+                    <i class="bi bi-calendar-event me-2"></i>Forecast for {{ forecast.forecast_date }}
+                </h2>
+                <p class="text-muted mb-0">
+                    Generated {{ forecast.created_at|timesince }} ago
+                </p>
+            </div>
+            <div class="btn-group">
+                <a href="{% url 'export_forecast' forecast.id %}" class="btn btn-outline-primary">
+                    <i class="bi bi-download me-1"></i>Export CSV
+                </a>
+                <a href="{% url 'forecast_list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-1"></i>Back to List
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Badges -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex gap-2 flex-wrap">
+                {% if forecast_status == 'verified' %}
+                    <span class="badge bg-success fs-6">
+                        <i class="bi bi-check-circle me-1"></i>Verified
+                    </span>
+                {% elif forecast_status == 'overdue' %}
+                    <span class="badge bg-warning text-dark fs-6">
+                        <i class="bi bi-exclamation-triangle me-1"></i>Overdue
+                    </span>
+                {% else %}
+                    <span class="badge bg-info fs-6">
+                        <i class="bi bi-clock me-1"></i>Pending Verification
+                    </span>
+                {% endif %}
+                
+                <span class="badge bg-primary fs-6">
+                    <i class="bi bi-cpu me-1"></i>Model v{{ model.version }}
+                </span>
+                
+                {% if confidence %}
+                    <span class="badge bg-{% if confidence > 80 %}success{% elif confidence > 60 %}info{% else %}warning{% endif %} fs-6">
+                        <i class="bi bi-shield-check me-1"></i>{{ confidence }}% Confidence
+                    </span>
+                {% endif %}
+                
+                {% if model.validation_loss %}
+                    <span class="badge bg-{% if model.validation_loss < 0.1 %}success{% elif model.validation_loss < 0.2 %}info{% else %}warning{% endif %} fs-6">
+                        <i class="bi bi-activity me-1"></i>Model Health: {% if model.validation_loss < 0.1 %}Excellent{% elif model.validation_loss < 0.2 %}Good{% else %}Fair{% endif %}
+                    </span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Business Intelligence Metrics -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 bg-gradient" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="card-body text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="mb-1 opacity-75 small">📦 Predicted Quantity</p>
+                            <h3 class="fw-bold mb-0">{{ forecast.predicted_quantity|floatformat:0 }}</h3>
+                            <small class="opacity-75">units</small>
+                        </div>
+                        <div class="bg-white bg-opacity-25 rounded-circle p-3">
+                            <i class="bi bi-box-seam fs-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 bg-gradient" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <div class="card-body text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="mb-1 opacity-75 small">💰 Average Unit Price</p>
+                            <h3 class="fw-bold mb-0">₦{{ forecast.average_selling_price|floatformat:2 }}</h3>
+                            <small class="opacity-75">per unit</small>
+                        </div>
+                        <div class="bg-white bg-opacity-25 rounded-circle p-3">
+                            <i class="bi bi-tag fs-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 bg-gradient" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                <div class="card-body text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="mb-1 opacity-75 small">💵 Expected Revenue</p>
+                            <h3 class="fw-bold mb-0">₦{{ forecast.expected_revenue|floatformat:0 }}</h3>
+                            <small class="opacity-75">total revenue</small>
+                        </div>
+                        <div class="bg-white bg-opacity-25 rounded-circle p-3">
+                            <i class="bi bi-currency-dollar fs-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 bg-gradient" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                <div class="card-body text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="mb-1 opacity-75 small">📈 Expected Profit</p>
+                            <h3 class="fw-bold mb-0">
+                                {% if forecast.expected_profit %}
+                                    ₦{{ forecast.expected_profit|floatformat:0 }}
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </h3>
+                            <small class="opacity-75">
+                                {% if forecast.expected_profit %}
+                                    net profit
+                                {% else %}
+                                    add cost_price
+                                {% endif %}
+                            </small>
+                        </div>
+                        <div class="bg-white bg-opacity-25 rounded-circle p-3">
+                            <i class="bi bi-cash-stack fs-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Comparison Metrics -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted small mb-1">📊 Historical Avg Revenue</p>
+                            <h3 class="fw-bold text-info mb-0">₦{{ forecast.historical_avg_revenue|floatformat:0 }}</h3>
+                            <small class="text-muted">Last 30 days average</small>
+                        </div>
+                        <div class="bg-info bg-opacity-10 rounded-circle p-3">
+                            <i class="bi bi-graph-up fs-4 text-info"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted small mb-1">📉 Revenue Difference</p>
+                            <h3 class="fw-bold mb-0">
+                                {% if forecast.revenue_difference is not None %}
+                                    <span class="{% if forecast.revenue_difference > 0 %}text-success{% else %}text-danger{% endif %}">
+                                        {% if forecast.revenue_difference > 0 %}+{% endif %}₦{{ forecast.revenue_difference|floatformat:0 }}
+                                    </span>
+                                {% else %}
+                                    <span class="text-muted">—</span>
+                                {% endif %}
+                            </h3>
+                            <small class="text-muted">vs historical average</small>
+                        </div>
+                        <div class="bg-{% if forecast.revenue_difference is not None and forecast.revenue_difference > 0 %}success{% else %}warning{% endif %} bg-opacity-10 rounded-circle p-3">
+                            <i class="bi bi-{% if forecast.revenue_difference is not None and forecast.revenue_difference > 0 %}arrow-up{% else %}arrow-down{% endif %} fs-4 text-{% if forecast.revenue_difference is not None and forecast.revenue_difference > 0 %}success{% else %}warning{% endif %}"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted small mb-1">📊 % Change</p>
+                            <h3 class="fw-bold mb-0">
+                                {% if forecast.revenue_percentage_change is not None %}
+                                    <span class="badge bg-{% if forecast.revenue_percentage_change > 0 %}success{% else %}danger{% endif %} fs-5">
+                                        {% if forecast.revenue_percentage_change > 0 %}+{% endif %}{{ forecast.revenue_percentage_change|floatformat:1 }}%
+                                    </span>
+                                {% else %}
+                                    <span class="text-muted">—</span>
+                                {% endif %}
+                            </h3>
+                            <small class="text-muted">revenue growth</small>
+                        </div>
+                        <div class="bg-{% if forecast.revenue_percentage_change is not None and forecast.revenue_percentage_change > 0 %}success{% else %}danger{% endif %} bg-opacity-10 rounded-circle p-3">
+                            <i class="bi bi-percent fs-4 text-{% if forecast.revenue_percentage_change is not None and forecast.revenue_percentage_change > 0 %}success{% else %}danger{% endif %}"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Forecast Visualization Chart -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
+                    <h5 class="fw-bold"><i class="bi bi-graph-up me-2"></i>Forecast Visualization</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="forecastChart" height="100"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Forecast Details -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-bottom-0 pt-4">
+                    <h5 class="fw-bold"><i class="bi bi-info-circle me-2"></i>Forecast Details</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless mb-0">
+                        <tr>
+                            <td class="text-muted" style="width: 40%;">Forecast Date</td>
+                            <td><strong>{{ forecast.forecast_date }}</strong></td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Generated On</td>
+                            <td>{{ forecast.created_at|date:"M d, Y H:i" }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Forecast Horizon</td>
+                            <td>{{ forecast.forecast_horizon }} days ahead</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Model Used</td>
+                            <td>
+                                <span class="badge bg-primary bg-opacity-10 text-primary">
+                                    {{ model.name }}
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Model Version</td>
+                            <td>v{{ model.version }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Model Trained</td>
+                            <td>{{ model.trained_at|date:"M d, Y H:i" }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-bottom-0 pt-4">
+                    <h5 class="fw-bold"><i class="bi bi-bar-chart me-2"></i>Confidence Interval</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless mb-0">
+                        <tr>
+                            <td class="text-muted" style="width: 40%;">Predicted Quantity</td>
+                            <td><strong class="text-primary">{{ forecast.predicted_quantity|floatformat:2 }}</strong></td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Lower Bound (95% CI)</td>
+                            <td>
+                                {% if forecast.lower_bound %}
+                                    <span class="text-success">{{ forecast.lower_bound|floatformat:2 }}</span>
+                                {% else %}
+                                    <span class="text-muted">Not available</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Upper Bound (95% CI)</td>
+                            <td>
+                                {% if forecast.upper_bound %}
+                                    <span class="text-success">{{ forecast.upper_bound|floatformat:2 }}</span>
+                                {% else %}
+                                    <span class="text-muted">Not available</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Confidence Range</td>
+                            <td>
+                                {% if forecast.lower_bound and forecast.upper_bound %}
+                                    <span class="badge bg-light text-dark border">
+                                        ±{{ forecast.upper_bound|add:forecast.lower_bound|floatformat:0 }} units
+                                    </span>
+                                {% else %}
+                                    <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Historical Avg (30d)</td>
+                            <td>{{ historical_avg }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Input Features -->
+    {% if forecast.input_features %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
+                    <h5 class="fw-bold"><i class="bi bi-code-slash me-2"></i>Input Features Snapshot</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for key, value in forecast.input_features.items %}
+                        <div class="col-md-4 mb-2">
+                            <small class="text-muted">{{ key }}</small>
+                            <div class="fw-bold">{{ value }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const historicalData = {{ historical_data|safe }};
+    const forecast = {
+        date: '{{ forecast.forecast_date }}',
+        predicted: {{ forecast.predicted_quantity }},
+        lower: {{ forecast.lower_bound|default:"null" }},
+        upper: {{ forecast.upper_bound|default:"null" }}
+    };
+
+    const labels = historicalData.map(d => d.date);
+    labels.push(forecast.date);
+    
+    const historicalValues = historicalData.map(d => d.quantity);
+    historicalValues.push(null);
+    
+    const forecastValues = new Array(historicalData.length).fill(null);
+    forecastValues.push(forecast.predicted);
+    
+    const lowerValues = new Array(historicalData.length).fill(null);
+    lowerValues.push(forecast.lower);
+    
+    const upperValues = new Array(historicalData.length).fill(null);
+    upperValues.push(forecast.upper);
+
+    const ctx = document.getElementById('forecastChart').getContext('2d');
+    
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Historical Sales',
+                    data: historicalValues,
+                    borderColor: '#6c757d',
+                    backgroundColor: 'rgba(108, 117, 125, 0.1)',
+                    borderWidth: 2,
+                    pointRadius: 3,
+                    tension: 0.3,
+                    fill: false
+                },
+                {
+                    label: 'Forecast',
+                    data: forecastValues,
+                    borderColor: '#0d6efd',
+                    backgroundColor: '#0d6efd',
+                    borderWidth: 3,
+                    pointRadius: 8,
+                    pointBackgroundColor: '#0d6efd',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    tension: 0.3,
+                    fill: false
+                },
+                {
+                    label: 'Upper Bound',
+                    data: upperValues,
+                    borderColor: 'rgba(13, 110, 253, 0.3)',
+                    backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                    pointRadius: 0,
+                    fill: '+1',
+                    tension: 0.3
+                },
+                {
+                    label: 'Lower Bound',
+                    data: lowerValues,
+                    borderColor: 'rgba(13, 110, 253, 0.3)',
+                    backgroundColor: 'transparent',
+                    pointRadius: 0,
+                    borderDash: [5, 5],
+                    tension: 0.3
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: { usePointStyle: true, padding: 15 }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    padding: 12,
+                    callbacks: {
+                        label: function(context) {
+                            if (context.raw === null) return null;
+                            return context.dataset.label + ': ' + Math.round(context.raw);
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    title: { display: true, text: 'Date', font: { size: 14, weight: 'bold' } },
+                    ticks: { maxRotation: 45 }
+                },
+                y: {
+                    title: { display: true, text: 'Sales Quantity', font: { size: 14, weight: 'bold' } },
+                    beginAtZero: true,
+                    grid: { color: 'rgba(0, 0, 0, 0.05)' }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

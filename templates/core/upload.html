@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+
+{% block title %}Upload Sales History{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item active">Sales History Upload</li>
+        </ol>
+    </nav>
+
+    <div class="row mb-4">
+        <div class="col-12 d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+                <h2 class="fw-bold mb-1"><i class="bi bi-cloud-upload me-2"></i>Upload Sales History</h2>
+                <p class="text-muted mb-0">Import CSV or Excel sales history for forecasting and reporting.</p>
+            </div>
+            <a href="{% url 'download_sales_template' %}" class="btn btn-outline-primary">
+                <i class="bi bi-download me-1"></i>Download Template
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    {% if error %}
+                    <div class="alert alert-danger d-flex align-items-start gap-2" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill mt-1"></i>
+                        <div>{{ error }}</div>
+                    </div>
+                    {% endif %}
+
+                    <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="sales_file" class="form-label fw-semibold">Sales file</label>
+                            <input type="file" id="sales_file" name="sales_file" class="form-control form-control-lg" accept=".csv,.xlsx,.xls" required>
+                            <div class="form-text">Accepted formats: CSV, XLSX, or XLS. The first row must contain column headers.</div>
+                            <div class="invalid-feedback">Choose a CSV or Excel file to upload.</div>
+                        </div>
+
+                        <div class="alert alert-info bg-info bg-opacity-10 border-info border-opacity-25 text-dark">
+                            <div class="fw-semibold mb-1"><i class="bi bi-info-circle me-1"></i>Required fields</div>
+                            Your file must include a date column and a sales quantity column. Product name, SKU, sales amount, and discount are optional but recommended.
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-4">
+                            <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle me-1"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary btn-lg" id="uploadButton">
+                                <i class="bi bi-arrow-right-circle me-1"></i>Upload and Map Columns
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold mb-3"><i class="bi bi-list-check me-2"></i>Upload Checklist</h5>
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>Use one row per sale or daily sales summary.</li>
+                        <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>Use consistent date formats where possible.</li>
+                        <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>Include SKU or product name to link records to products.</li>
+                        <li><i class="bi bi-check-circle text-success me-2"></i>Review column mapping before import.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold mb-3"><i class="bi bi-clock-history me-2"></i>Recent Uploads</h5>
+                    {% if recent_jobs %}
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>File</th>
+                                    <th>Status</th>
+                                    <th class="text-end">Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for job in recent_jobs %}
+                                <tr>
+                                    <td class="text-truncate" style="max-width: 180px;" title="{{ job.file.name }}">{{ job.file.name }}</td>
+                                    <td>
+                                        {% if job.status == 'IMPORTED' %}
+                                            <span class="badge bg-success">Imported</span>
+                                        {% elif job.status == 'FAILED' %}
+                                            <span class="badge bg-danger">Failed</span>
+                                        {% elif job.status == 'MAPPED' %}
+                                            <span class="badge bg-info text-dark">Mapped</span>
+                                        {% elif job.status == 'HEADERS_READ' %}
+                                            <span class="badge bg-warning text-dark">Ready to Map</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ job.get_status_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end small text-muted">{{ job.created_at|date:"M d, Y" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-inbox fs-1 text-muted mb-2"></i>
+                        <p class="text-muted mb-0">No sales history uploads yet.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form.needs-validation');
+    const button = document.getElementById('uploadButton');
+    form.addEventListener('submit', function(event) {
+        if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+        } else {
+            button.disabled = true;
+            button.innerHTML = '<span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Uploading...';
+        }
+        form.classList.add('was-validated');
+    });
+});
+</script>
+{% endblock %}

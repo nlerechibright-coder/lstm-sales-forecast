@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+
+{% block title %}Model Comparison{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="fw-bold"><i class="bi bi-collection me-2"></i>Model Versions</h2>
+            <p class="text-muted">Compare performance across trained model versions</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Version</th>
+                                    <th>Name</th>
+                                    <th>Status</th>
+                                    <th>Samples</th>
+                                    <th>Epochs</th>
+                                    <th>Val Loss</th>
+                                    <th>MAE</th>
+                                    <th>RMSE</th>
+                                    <th>MAPE</th>
+                                    <th>Trained</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for m in models %}
+                                <tr class="{% if m.is_active %}table-success{% endif %}">
+                                    <td class="fw-bold">v{{ m.version }}</td>
+                                    <td>{{ m.name }}</td>
+                                    <td>
+                                        {% if m.is_active %}
+                                            <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ m.training_samples|default:"—" }}</td>
+                                    <td>{{ m.epochs_trained }}</td>
+                                    <td>{{ m.validation_loss|floatformat:4|default:"—" }}</td>
+                                    <td>{{ m.mae|floatformat:2|default:"—" }}</td>
+                                    <td>{{ m.rmse|floatformat:2|default:"—" }}</td>
+                                    <td>{{ m.mape|floatformat:2|default:"—" }}%</td>
+                                    <td><small>{{ m.trained_at|date:"M d, Y" }}</small></td>
+                                    <td>
+                                        {% if not m.is_active %}
+                                        <button class="btn btn-sm btn-outline-primary activate-btn" data-model-id="{{ m.id }}">
+                                            Activate
+                                        </button>
+                                        {% else %}
+                                        <span class="text-muted small">Current</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="11" class="text-center text-muted py-4">No models trained yet.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.querySelectorAll('.activate-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const modelId = this.dataset.modelId;
+        fetch(`/forecasting/models/${modelId}/activate/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.error || 'Activation failed');
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

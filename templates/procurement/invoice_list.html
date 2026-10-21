@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+{% load forecast_filters %}
+
+{% block title %}Supplier Invoices{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <div>
+                <h2 class="fw-bold"><i class="bi bi-receipt me-2"></i>Supplier Invoices</h2>
+                <p class="text-muted mb-0">{{ total_invoices }} invoice{{ total_invoices|pluralize }}</p>
+            </div>
+            <div class="btn-group">
+                <a href="{% url 'invoice_add' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle me-1"></i>Add Invoice
+                </a>
+                <a href="{% url 'invoice_bulk_upload' %}" class="btn btn-outline-warning">
+                    <i class="bi bi-cloud-upload me-1"></i>Bulk Import
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <form method="get" class="row g-3 align-items-end">
+                        <div class="col-md-5">
+                            <input type="text" name="q" class="form-control" placeholder="Search invoice # or supplier..." value="{{ query }}">
+                        </div>
+                        <div class="col-md-3">
+                            <select name="status" class="form-select">
+                                <option value="">All Status</option>
+                                <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+                                <option value="approved" {% if status_filter == 'approved' %}selected{% endif %}>Approved</option>
+                                <option value="paid" {% if status_filter == 'paid' %}selected{% endif %}>Paid</option>
+                                <option value="rejected" {% if status_filter == 'rejected' %}selected{% endif %}>Rejected</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-outline-primary w-100"><i class="bi bi-search"></i> Filter</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Invoice #</th>
+                                    <th>Supplier</th>
+                                    <th>Date</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>File</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for inv in page_obj %}
+                                <tr>
+                                    <td><a href="{% url 'invoice_detail' inv.id %}" class="fw-bold text-decoration-none">{{ inv.invoice_number }}</a></td>
+                                    <td>{{ inv.supplier.name }}</td>
+                                    <td>{{ inv.invoice_date }}</td>
+                                    <td class="fw-bold">{{ inv.total_amount|naira }}</td>
+                                    <td>
+                                        <span class="badge bg-{% if inv.status == 'paid' %}success{% elif inv.status == 'approved' %}primary{% elif inv.status == 'rejected' %}danger{% else %}warning{% endif %}">
+                                            {{ inv.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if inv.invoice_file %}
+                                            <a href="{{ inv.invoice_file.url }}" target="_blank" class="btn btn-sm btn-outline-secondary"><i class="bi bi-download"></i></a>
+                                        {% else %}
+                                            <span class="text-muted">—</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'invoice_detail' inv.id %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="7" class="text-center py-4 text-muted"><i class="bi bi-inbox fs-1 d-block mb-2"></i>No invoices.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if page_obj.has_other_pages %}
+    <div class="row mt-3">
+        <div class="col-12 d-flex justify-content-center">
+            <nav>
+                <ul class="pagination">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">Previous</a></li>
+                    {% endif %}
+                    <li class="page-item active"><span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span></li>
+                    {% if page_obj.has_next %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">Next</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+
+{% block title %}Sales Import Results{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'upload_sales' %}">Sales History Upload</a></li>
+            <li class="breadcrumb-item active">Import Results</li>
+        </ol>
+    </nav>
+
+    <div class="row justify-content-center">
+        <div class="col-xl-10">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-{% if imported > 0 %}success{% else %}danger{% endif %} text-white py-3">
+                    <h4 class="mb-0">Import Results</h4>
+                    <small>Job #{{ job.id }} - {{ job.file.name }}</small>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-3">
+                            <div class="border rounded p-3 text-center bg-success bg-opacity-10">
+                                <h2 class="mb-0 text-success">{{ imported }}</h2>
+                                <small class="text-muted">Rows Imported</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="border rounded p-3 text-center bg-warning bg-opacity-10">
+                                <h2 class="mb-0 text-warning">{{ skipped }}</h2>
+                                <small class="text-muted">Rows Skipped</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="border rounded p-3 text-center bg-info bg-opacity-10">
+                                <h2 class="mb-0 text-info">{{ norm_summary.valid_rows }}</h2>
+                                <small class="text-muted">Valid Rows</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="border rounded p-3 text-center bg-secondary bg-opacity-10">
+                                <h2 class="mb-0 text-secondary">{{ norm_summary.invalid_rows }}</h2>
+                                <small class="text-muted">Invalid Rows</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="progress mb-4" style="height: 28px;">
+                        <div class="progress-bar bg-success" role="progressbar" style="width: {{ norm_summary.success_rate }}%">
+                            {{ norm_summary.success_rate }}% Success Rate
+                        </div>
+                    </div>
+
+                    {% if imported > 0 %}
+                    <div class="alert alert-success">
+                        <i class="bi bi-check-circle me-1"></i>{{ imported }} sales rows were imported successfully and are now available for forecasting.
+                    </div>
+                    {% endif %}
+
+                    {% if invalid_rows %}
+                    <h5 class="mt-4">Invalid Rows</h5>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Row #</th>
+                                    <th>Data</th>
+                                    <th>Error</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in invalid_rows %}
+                                <tr>
+                                    <td>{{ row.row_number }}</td>
+                                    <td><code class="small">{{ row.raw_data }}</code></td>
+                                    <td class="text-danger">{{ row.error }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% endif %}
+
+                    {% if errors %}
+                    <h5 class="mt-4">Import Errors</h5>
+                    <div class="alert alert-danger">
+                        <ul class="mb-0">
+                            {% for err in errors %}
+                            <li>{{ err.error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    <div class="d-flex justify-content-between flex-wrap gap-2 mt-4">
+                        <a href="{% url 'upload_sales' %}" class="btn btn-outline-primary">
+                            <i class="bi bi-cloud-upload me-1"></i>Upload Another File
+                        </a>
+                        <a href="{% url 'dashboard' %}" class="btn btn-primary">
+                            Go to Dashboard<i class="bi bi-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

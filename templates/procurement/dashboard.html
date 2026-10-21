@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+{% load forecast_filters %}
+
+{% block title %}Procurement Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <div>
+                <h2 class="fw-bold"><i class="bi bi-truck me-2"></i>Procurement Dashboard</h2>
+                <p class="text-muted">Purchase management and supplier performance</p>
+            </div>
+            <a href="{% url 'invoice_bulk_upload' %}" class="btn btn-primary">
+                <i class="bi bi-cloud-upload me-2"></i>Bulk Import Purchases
+            </a>
+        </div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 border-start border-primary border-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted small mb-1">Active Suppliers</p>
+                            <h3 class="fw-bold text-primary mb-0">{{ total_suppliers }}</h3>
+                        </div>
+                        <div class="bg-primary bg-opacity-10 rounded-circle p-3">
+                            <i class="bi bi-building fs-4 text-primary"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 border-start border-success border-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted small mb-1">Total Orders</p>
+                            <h3 class="fw-bold text-success mb-0">{{ total_orders }}</h3>
+                            <small class="text-muted">{{ pending_orders }} pending</small>
+                        </div>
+                        <div class="bg-success bg-opacity-10 rounded-circle p-3">
+                            <i class="bi bi-cart-check fs-4 text-success"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 border-start border-warning border-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted small mb-1">Total Procurement Cost</p>
+                            <h3 class="fw-bold text-warning mb-0">{{ total_spent|naira }}</h3>
+                            <small class="text-muted">All-time received orders</small>
+                        </div>
+                        <div class="bg-warning bg-opacity-10 rounded-circle p-3">
+                            <i class="bi bi-cash-stack fs-4 text-warning"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 border-start border-info border-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted small mb-1">Inventory Value</p>
+                            <h3 class="fw-bold text-info mb-0">{{ inventory_value|naira }}</h3>
+                            <small class="text-muted">Based on cost prices</small>
+                        </div>
+                        <div class="bg-info bg-opacity-10 rounded-circle p-3">
+                            <i class="bi bi-box-seam fs-4 text-info"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions & Recent Orders -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="fw-bold mb-3"><i class="bi bi-lightning me-2"></i>Quick Actions</h5>
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'supplier_add' %}" class="btn btn-outline-primary text-start">
+                            <i class="bi bi-plus-circle me-2"></i>Add New Supplier
+                        </a>
+                        <a href="{% url 'purchase_order_add' %}" class="btn btn-outline-success text-start">
+                            <i class="bi bi-cart-plus me-2"></i>Create Purchase Order
+                        </a>
+                        <a href="{% url 'invoice_add' %}" class="btn btn-outline-info text-start">
+                            <i class="bi bi-receipt me-2"></i>Add Supplier Invoice
+                        </a>
+                        <a href="{% url 'invoice_bulk_upload' %}" class="btn btn-outline-warning text-start">
+                            <i class="bi bi-cloud-upload me-2"></i>Bulk Import Purchases
+                        </a>
+                        <a href="{% url 'supplier_list' %}" class="btn btn-outline-secondary text-start">
+                            <i class="bi bi-building me-2"></i>View All Suppliers
+                        </a>
+                        <a href="{% url 'purchase_history' %}" class="btn btn-outline-secondary text-start">
+                            <i class="bi bi-clock-history me-2"></i>Purchase History
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="fw-bold mb-3"><i class="bi bi-clock-history me-2"></i>Recent Orders</h5>
+                    {% if recent_orders %}
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0">
+                            <tbody>
+                                {% for order in recent_orders %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'purchase_order_detail' order.id %}" class="text-decoration-none fw-bold">
+                                            {{ order.order_number }}
+                                        </a>
+                                    </td>
+                                    <td class="text-muted small">{{ order.supplier.name|truncatechars:15 }}</td>
+                                    <td>
+                                        <span class="badge bg-{% if order.status == 'received' %}success{% elif order.status == 'ordered' %}primary{% elif order.status == 'cancelled' %}danger{% else %}warning{% endif %}">
+                                            {{ order.get_status_display }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <a href="{% url 'purchase_order_list' %}" class="btn btn-sm btn-outline-primary mt-3 w-100">View All Orders</a>
+                    {% else %}
+                    <div class="text-center py-4 text-muted">
+                        <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                        No purchase orders yet.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="fw-bold mb-3"><i class="bi bi-trophy me-2"></i>Top Suppliers</h5>
+                    {% if top_suppliers %}
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0">
+                            <tbody>
+                                {% for supplier in top_suppliers %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'supplier_detail' supplier.id %}" class="text-decoration-none fw-bold">
+                                            {{ supplier.name|truncatechars:20 }}
+                                        </a>
+                                    </td>
+                                    <td class="text-muted small">{{ supplier.order_count }} orders</td>
+                                    <td class="text-end fw-bold">{{ supplier.total_spent|naira }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <a href="{% url 'supplier_list' %}" class="btn btn-sm btn-outline-primary mt-3 w-100">View All Suppliers</a>
+                    {% else %}
+                    <div class="text-center py-4 text-muted">
+                        <i class="bi bi-building fs-1 d-block mb-2"></i>
+                        No suppliers registered yet.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

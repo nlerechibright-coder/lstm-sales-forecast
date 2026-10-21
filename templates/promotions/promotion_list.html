@@ -1,0 +1,202 @@
+{% extends 'base.html' %}
+
+{% block title %}Promotions{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <div>
+                <h2 class="fw-bold">
+                    <i class="bi bi-megaphone me-2"></i>Promotions
+                </h2>
+                <p class="text-muted mb-0">Manage discounts and promotional campaigns</p>
+            </div>
+            <a href="{% url 'promotion_create' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-1"></i>Create Promotion
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <form method="get" action="{% url 'promotion_list' %}">
+                        <div class="row g-3 align-items-end">
+                            <div class="col-md-6">
+                                <label class="form-label small text-muted">Search</label>
+                                <input type="text" name="q" class="form-control" 
+                                       placeholder="Search promotions..." 
+                                       value="{{ search_query }}">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small text-muted">Status</label>
+                                <select name="status" class="form-select">
+                                    <option value="">All</option>
+                                    <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+                                    <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
+                                    <option value="expired" {% if status_filter == 'expired' %}selected{% endif %}>Expired</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <button type="submit" class="btn btn-outline-primary w-100">
+                                    <i class="bi bi-search me-1"></i>Filter
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if not promotions %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center py-5">
+                    <i class="bi bi-megaphone fs-1 text-muted mb-3"></i>
+                    <h5 class="text-muted">No promotions found</h5>
+                    <p class="text-muted">Create your first promotion to start offering discounts</p>
+                    <a href="{% url 'promotion_create' %}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-1"></i>Create Promotion
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Promotion Name</th>
+                                    <th>Discount</th>
+                                    <th>Date Range</th>
+                                    <th>Products</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for promo in promotions %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ promo.promotion_name }}</strong>
+                                        {% if promo.description %}
+                                            <br><small class="text-muted">{{ promo.description|truncatewords:10 }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-success fs-6">
+                                            {{ promo.get_discount_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <small>
+                                            {{ promo.start_date|date:"M d, Y" }}<br>
+                                            to {{ promo.end_date|date:"M d, Y" }}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        {% if promo.products.count > 0 %}
+                                            <span class="badge bg-info">{{ promo.products.count }} products</span>
+                                        {% else %}
+                                            <span class="text-muted">All products</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if promo.status == 'active' and promo.is_active %}
+                                            <span class="badge bg-success">Active</span>
+                                        {% elif promo.status == 'expired' %}
+                                            <span class="badge bg-secondary">Expired</span>
+                                        {% else %}
+                                            <span class="badge bg-warning text-dark">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{% url 'promotion_edit' promo.id %}" class="btn btn-outline-primary" title="Edit">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <button class="btn btn-outline-{% if promo.is_active %}warning{% else %}success{% endif %} toggle-status-btn" 
+                                                    data-promo-id="{{ promo.id }}" title="{% if promo.is_active %}Deactivate{% else %}Activate{% endif %}">
+                                                <i class="bi bi-{% if promo.is_active %}pause{% else %}play{% endif %}-circle"></i>
+                                            </button>
+                                            <button class="btn btn-outline-danger delete-promo-btn" 
+                                                    data-promo-id="{{ promo.id }}" data-promo-name="{{ promo.promotion_name }}" title="Delete">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Toggle status
+    document.querySelectorAll('.toggle-status-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const promoId = this.dataset.promoId;
+            
+            fetch(`/promotions/${promoId}/toggle/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert(data.error || 'Failed to toggle status');
+                }
+            });
+        });
+    });
+    
+    // Delete promotion
+    document.querySelectorAll('.delete-promo-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const promoId = this.dataset.promoId;
+            const promoName = this.dataset.promoName;
+            
+            if (!confirm(`Are you sure you want to delete "${promoName}"?`)) return;
+            
+            fetch(`/promotions/${promoId}/delete/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert(data.error || 'Failed to delete promotion');
+                }
+            });
+        });
+    });
+});
+</script>
+{% endblock %}

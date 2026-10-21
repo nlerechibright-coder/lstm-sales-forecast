@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+
+{% block title %}Inventory Settings{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="fw-bold">
+                <i class="bi bi-gear me-2"></i>Inventory Settings
+            </h2>
+            <p class="text-muted">Configure inventory management preferences</p>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-bottom-0 pt-4">
+                    <h5 class="fw-bold"><i class="bi bi-tags me-2"></i>Product Categories</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Manage product categories for organizing your inventory.</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="badge bg-primary">{{ categories.count }} categories</span>
+                        <a href="{% url 'category_list' %}" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-gear me-1"></i>Manage
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-bottom-0 pt-4">
+                    <h5 class="fw-bold"><i class="bi bi-credit-card me-2"></i>Payment Methods</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Configure payment methods for sales transactions.</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="badge bg-primary">{{ payment_methods.count }} methods</span>
+                        <a href="{% url 'payment_method_list' %}" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-gear me-1"></i>Manage
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom-0 pt-4">
+                    <h5 class="fw-bold"><i class="bi bi-stars me-2"></i>Advanced Settings (Coming Soon)</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="list-group">
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <i class="bi bi-bell me-2 text-muted"></i>
+                                        <strong>Low Stock Notifications</strong>
+                                        <p class="mb-0 small text-muted">Configure when to receive alerts</p>
+                                    </div>
+                                    <span class="badge bg-secondary">Coming Soon</span>
+                                </div>
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <i class="bi bi-arrow-repeat me-2 text-muted"></i>
+                                        <strong>Auto-Reorder Rules</strong>
+                                        <p class="mb-0 small text-muted">Set up automatic reorder triggers</p>
+                                    </div>
+                                    <span class="badge bg-secondary">Coming Soon</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="list-group">
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <i class="bi bi-calendar-range me-2 text-muted"></i>
+                                        <strong>Stock Review Period</strong>
+                                        <p class="mb-0 small text-muted">Define review frequency</p>
+                                    </div>
+                                    <span class="badge bg-secondary">Coming Soon</span>
+                                </div>
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <i class="bi bi-file-earmark-spreadsheet me-2 text-muted"></i>
+                                        <strong>Bulk Import/Export</strong>
+                                        <p class="mb-0 small text-muted">Import/export inventory data</p>
+                                    </div>
+                                    <span class="badge bg-secondary">Coming Soon</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

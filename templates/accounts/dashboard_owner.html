@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+
+{% block title %}Owner Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="fw-bold">
+                <i class="bi bi-speedometer2 me-2"></i>Owner Operations Control Console
+            </h2>
+            <p class="text-muted">Company Entity: <strong>{{ user.company.name }}</strong></p>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="fw-bold"><i class="bi bi-people me-2"></i>Staff Management</h5>
+                    <p class="text-muted">Create staff accounts, allocate roles, and view your workforce team status.</p>
+                    <a href="{% url 'create_staff' %}" class="btn btn-primary">
+                        <i class="bi bi-person-plus me-1"></i>Add New Staff
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="fw-bold"><i class="bi bi-box-seam me-2"></i>Product Catalog</h5>
+                    <p class="text-muted">Maintain catalogs, assign pricing benchmarks, and manage direct stock levels.</p>
+                    <a href="{% url 'list_products' %}" class="btn btn-outline-primary">
+                        <i class="bi bi-box me-1"></i>Manage Products
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="fw-bold"><i class="bi bi-graph-up me-2"></i>System Metrics</h5>
+                    <p class="text-muted">Review active system operational logs and base historical data uploads.</p>
+                    <a href="{% url 'forecasting_dashboard' %}" class="btn btn-outline-primary">
+                        <i class="bi bi-cpu me-1"></i>ML Pipeline
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom-0 pt-4">
+                    <h5 class="fw-bold"><i class="bi bi-people-fill me-2"></i>Registered Organization Staff</h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if staff_members %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Username</th>
+                                    <th>Email</th>
+                                    <th>Role</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for member in staff_members %}
+                                <tr>
+                                    <td><strong>{{ member.username }}</strong></td>
+                                    <td>{{ member.email|default:"N/A" }}</td>
+                                    <td><span class="badge bg-secondary">{{ member.get_role_display }}</span></td>
+                                    <td>
+                                        {% if member.is_active %}
+                                            <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Suspended</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-inbox fs-1 text-muted mb-2"></i>
+                        <p class="text-muted mb-0">No staff accounts registered yet for this organization.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

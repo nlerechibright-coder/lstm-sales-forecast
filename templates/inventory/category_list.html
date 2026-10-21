@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+
+{% block title %}Inventory Categories{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <div>
+                <h2 class="fw-bold">
+                    <i class="bi bi-tags me-2"></i>Inventory Categories
+                </h2>
+                <p class="text-muted mb-0">Manage product categories for your inventory</p>
+            </div>
+            <a href="{% url 'category_add' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-1"></i>Add Category
+            </a>
+        </div>
+    </div>
+
+    {% if categories %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Category Name</th>
+                                    <th>Description</th>
+                                    <th>Products</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for category in categories %}
+                                <tr>
+                                    <td><strong>{{ category.name }}</strong></td>
+                                    <td>{{ category.description|default:"—" }}</td>
+                                    <td>{{ category.products.count }}</td>
+                                    <td>
+                                        {% if category.is_active %}
+                                            <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{% url 'category_edit' category.id %}" class="btn btn-outline-primary" title="Edit">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <button class="btn btn-outline-danger delete-category-btn" 
+                                                    data-category-id="{{ category.id }}" 
+                                                    data-category-name="{{ category.name }}"
+                                                    title="Delete">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center py-5">
+                    <i class="bi bi-inbox fs-1 text-muted mb-3"></i>
+                    <h5 class="text-muted">No categories yet</h5>
+                    <p class="text-muted">Create your first inventory category to organize products.</p>
+                    <a href="{% url 'category_add' %}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-1"></i>Add First Category
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+document.querySelectorAll('.delete-category-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const categoryId = this.dataset.categoryId;
+        const categoryName = this.dataset.categoryName;
+        
+        if (!confirm(`Are you sure you want to delete category "${categoryName}"?`)) return;
+
+        fetch(`/inventory/categories/${categoryId}/delete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.error || 'Delete failed');
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

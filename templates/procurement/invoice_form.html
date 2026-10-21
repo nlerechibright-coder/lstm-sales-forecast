@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ action }} Invoice{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'procurement_dashboard' %}">Procurement</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'invoice_list' %}">Invoices</a></li>
+            <li class="breadcrumb-item active">{{ action }}</li>
+        </ol>
+    </nav>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="fw-bold"><i class="bi bi-receipt me-2"></i>{{ action }} Invoice</h2>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+
+                        {% if form.errors %}
+                        <div class="alert alert-danger">
+                            <strong>Please correct the errors below.</strong>
+                            <ul class="mb-0 mt-2">
+                                {% for field in form %}
+                                    {% for error in field.errors %}<li>{{ field.label }}: {{ error }}</li>{% endfor %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Supplier <span class="text-danger">*</span></label>
+                                {{ form.supplier }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Purchase Order</label>
+                                {{ form.purchase_order }}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Invoice Number <span class="text-danger">*</span></label>
+                            {{ form.invoice_number }}
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Invoice Date <span class="text-danger">*</span></label>
+                                {{ form.invoice_date }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Due Date</label>
+                                {{ form.due_date }}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Amount <span class="text-danger">*</span></label>
+                                {{ form.amount }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Tax Amount</label>
+                                {{ form.tax_amount }}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Invoice File (PDF/Excel/CSV)</label>
+                            {{ form.invoice_file }}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Notes</label>
+                            {{ form.notes }}
+                        </div>
+
+                        <hr>
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'invoice_list' %}" class="btn btn-outline-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle me-1"></i>Save Invoice</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
