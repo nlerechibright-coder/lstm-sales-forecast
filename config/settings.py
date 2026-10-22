@@ -52,7 +52,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # <-- ADDED FOR PRODUCTION STATIC FILES
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -156,14 +156,14 @@ LOGOUT_REDIRECT_URL = 'login'
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Forecasting configuration.  The selectable values are intentionally limited
-# in the UI, while the service validates any whole-day horizon through the
-# configured maximum.
-FORECAST_DEFAULT_HORIZON = 60
+# =============================================================================
+# FORECASTING CONFIGURATION (UPDATED FOR FAST DEMO)
+# =============================================================================
+FORECAST_DEFAULT_HORIZON = 7
 FORECAST_SUPPORTED_HORIZONS = (7, 30, 60, 90, 180, 365)
 FORECAST_MAX_HORIZON = 365
-FORECAST_AUTO_RETRAIN_MIN_TOTAL_DAYS = 60
-FORECAST_AUTO_RETRAIN_MIN_NEW_DAYS = 14
+FORECAST_AUTO_RETRAIN_MIN_TOTAL_DAYS = 7   # <-- CHANGED TO 7 FOR DEMO
+FORECAST_AUTO_RETRAIN_MIN_NEW_DAYS = 2     # <-- CHANGED TO 2 FOR DEMO
 
 
 # =============================================================================
