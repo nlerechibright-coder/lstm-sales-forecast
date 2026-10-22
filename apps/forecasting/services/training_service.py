@@ -46,11 +46,11 @@ class TrainingService:
     """
 
     # =====================================================================
-    # TEMPORARY SETTINGS FOR DEMO / DEFENSE (7-Day CSV)
+    # TEMPORARY SETTINGS FOR DEMO / DEFENSE (Fast Training)
     # Revert these back to production values after the demo!
     # =====================================================================
     DEFAULT_CONFIG = {
-        'lookback': 3,           # Reduced from 30 (Must be smaller than 7-day CSV)
+        'lookback': 3,           # Reduced from 30 (Must be smaller than CSV length)
         'lstm_units': 16,        # Reduced for fast CPU training
         'dropout_rate': 0.1,
         'dense_units': 8,        # Reduced for fast CPU training
