@@ -45,16 +45,20 @@ class TrainingService:
     End-to-end LSTM training pipeline scoped per company.
     """
 
+    # =====================================================================
+    # TEMPORARY SETTINGS FOR DEMO / DEFENSE (7-Day CSV)
+    # Revert these back to production values after the demo!
+    # =====================================================================
     DEFAULT_CONFIG = {
-        'lookback': 30,
-        'lstm_units': 64,
-        'dropout_rate': 0.2,
-        'dense_units': 32,
-        'learning_rate': 0.001,
-        'batch_size': 32,
-        'epochs': 100,
+        'lookback': 3,           # Reduced from 30 (Must be smaller than 7-day CSV)
+        'lstm_units': 16,        # Reduced for fast CPU training
+        'dropout_rate': 0.1,
+        'dense_units': 8,        # Reduced for fast CPU training
+        'learning_rate': 0.01,   # Increased to converge faster
+        'batch_size': 8,         # Reduced to prevent RAM crashes
+        'epochs': 5,             # Reduced from 100 (Will finish in ~10-20 mins)
         'validation_split': 0.2,
-        'early_stop_patience': 10,
+        'early_stop_patience': 2,
     }
 
     def __init__(self, company_id: int, config: Optional[Dict] = None):
@@ -197,10 +201,11 @@ class TrainingService:
             self._log("Building training dataframe...")
             df = self.preprocessor.build_training_dataframe()
 
-            if df.empty or len(df) < self.config['lookback'] * 2:
+            # TEMPORARY FOR DEMO: Changed minimum from lookback * 2 (60) to 7 days
+            if df.empty or len(df) < 7:
                 raise ValueError(
                     f"Insufficient data: {len(df)} records. "
-                    f"Need at least {self.config['lookback'] * 2} days for training."
+                    f"Need at least 7 days for demo training."
                 )
 
             self._log(f"Dataset prepared: {len(df)} records from {df.index.min()} to {df.index.max()}")
