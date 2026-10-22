@@ -96,7 +96,7 @@ def training_dashboard(request):
         'latest_sale': latest_sale, 
         'earliest_sale': earliest_sale,
         'model_history': model_history, 
-        'has_enough_data': total_sales_days >= 60,
+        'has_enough_data': total_sales_days >= 7,  # <-- CHANGED FROM 60 TO 7
         'upload_summary': upload_summary,
         'latest_mae': latest_mae,
         'latest_rmse': latest_rmse,
@@ -129,7 +129,7 @@ def training_diagnose(request):
     
     return JsonResponse({
         'total_sales_days': total_sales_days, 'total_sales_records': total_records,
-        'has_enough_data': total_sales_days >= 60,
+        'has_enough_data': total_sales_days >= 7,  # <-- CHANGED FROM 60 TO 7
         'current_run_id': current_run.id if current_run else None,
         'current_run_status': current_run.status if current_run else None,
         'active_model_id': active_model.id if active_model else None,
@@ -144,8 +144,8 @@ def _get_disabled_reason(company, total_sales_days, current_run):
     """Determine why the train button is disabled."""
     if current_run:
         return f"A training job (#{current_run.id}) is already {current_run.status.lower()}"
-    if total_sales_days < 60:
-        return f"Need at least 60 days of data. Currently have {total_sales_days} days."
+    if total_sales_days < 7:  # <-- CHANGED FROM 60 TO 7
+        return f"Need at least 7 days of data. Currently have {total_sales_days} days."
     return None
 
 
@@ -255,7 +255,6 @@ def forecast_results(request):
             forecast_model=active_model
         ).order_by('forecast_date')
 
-        # FIX: Use "is not None" to properly handle Decimal('0.00') values
         forecasts = [
             {
                 'forecast_date': str(f.forecast_date),
@@ -275,7 +274,6 @@ def forecast_results(request):
         ]
 
         if forecasts:
-            # Calculate statistics
             quantities = [f['predicted_quantity'] for f in forecasts]
             revenues = [f['expected_revenue'] for f in forecasts]
             profits = [f['expected_profit'] for f in forecasts if f['expected_profit'] is not None]
@@ -289,7 +287,6 @@ def forecast_results(request):
                 'model_version': active_model.version,
                 'generated_at': active_model.trained_at.strftime('%B %d, %Y at %I:%M %p') if active_model.trained_at else 'Unknown',
                 'forecast_horizon': forecast_qs.first().forecast_horizon if forecast_qs.exists() else 7,
-                # Business metrics
                 'total_revenue': round(sum(revenues), 2),
                 'avg_daily_revenue': round(sum(revenues) / len(revenues), 2) if revenues else 0,
                 'max_revenue': round(max(revenues), 2) if revenues else 0,
@@ -298,7 +295,6 @@ def forecast_results(request):
                 'avg_selling_price': forecasts[0]['average_selling_price'] if forecasts else 0,
             }
 
-            # Calculate trend
             if len(quantities) >= 2:
                 first_half_avg = sum(quantities[:len(quantities)//2]) / (len(quantities)//2)
                 second_half_avg = sum(quantities[len(quantities)//2:]) / (len(quantities) - len(quantities)//2)
@@ -329,7 +325,6 @@ def forecast_results(request):
                         'color': 'info'
                     }
 
-            # Generate AI recommendation
             if trend_info:
                 if trend_info['direction'] == 'decreasing':
                     ai_recommendation = {
@@ -699,7 +694,6 @@ def export_forecast(request, forecast_id):
     writer.writerow(['Forecast Horizon', f"{forecast.forecast_horizon} days"])
     writer.writerow(['Generated Date', forecast.created_at])
     
-    # Business metrics
     writer.writerow([])
     writer.writerow(['BUSINESS METRICS', ''])
     writer.writerow(['Average Selling Price', f"₦{forecast.average_selling_price}" if forecast.average_selling_price else 'N/A'])
