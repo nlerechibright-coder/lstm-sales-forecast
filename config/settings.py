@@ -83,7 +83,7 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 
 # Database
-# Updated for PostgreSQL (Render Native)
+# Updated for PostgreSQL (Neon.tech requires sslmode=require)
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -92,6 +92,9 @@ DATABASES = {
         'PASSWORD': os.environ.get('DB_PASSWORD', 'local_dev_password'),
         'HOST': os.environ.get('DB_HOST', '127.0.0.1'),
         'PORT': os.environ.get('DB_PORT', '5432'),
+        'OPTIONS': {
+            'sslmode': 'require',  # CRITICAL for Neon.tech connection
+        },
     }
 }
 
