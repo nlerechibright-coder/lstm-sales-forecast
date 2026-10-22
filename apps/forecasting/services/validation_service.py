@@ -1,46 +1,46 @@
-from typing import Dict, Any, Optional, Tuple
-from django.conf import settings
-
+from typing import Dict, Tuple
 
 class TrainingConfigValidator:
-    """Validates hyperparameters before training begins."""
+    """Validates training configuration parameters."""
     
-    ALLOWED_LOOKBACK = range(14, 366)       # 14 days to 1 year
-    ALLOWED_EPOCHS = range(10, 1001)        # 10 to 1000
-    ALLOWED_LSTM_UNITS = [16, 32, 64, 128, 256]
-    
-    @classmethod
-    def validate(cls, config: Dict[str, Any]) -> Tuple[bool, Optional[str]]:
-        """
-        Returns (is_valid, error_message).
-        """
-        lookback = config.get('lookback', 30)
-        epochs = config.get('epochs', 100)
-        lstm_units = config.get('lstm_units', 64)
+    # DEMO MODE: Lowered minimums for 7-day fast testing
+    MIN_LOOKBACK = 2
+    MAX_LOOKBACK = 90
+    MIN_EPOCHS = 1
+    MAX_EPOCHS = 200
+    MIN_LSTM_UNITS = 8
+    MAX_LSTM_UNITS = 256
+
+    @staticmethod
+    def validate(config: Dict) -> Tuple[bool, str]:
+        lookback = config.get('lookback', 3)
+        epochs = config.get('epochs', 5)
+        lstm_units = config.get('lstm_units', 16)
+
+        if not (TrainingConfigValidator.MIN_LOOKBACK <= lookback <= TrainingConfigValidator.MAX_LOOKBACK):
+            return False, f"Lookback must be between {TrainingConfigValidator.MIN_LOOKBACK} and {TrainingConfigValidator.MAX_LOOKBACK} days."
         
-        if lookback not in cls.ALLOWED_LOOKBACK:
-            return False, f"Lookback must be between 14 and 365 days. Got {lookback}."
-            
-        if epochs not in cls.ALLOWED_EPOCHS:
-            return False, f"Epochs must be between 10 and 1000. Got {epochs}."
-            
-        if lstm_units not in cls.ALLOWED_LSTM_UNITS:
-            return False, f"LSTM units must be one of {cls.ALLOWED_LSTM_UNITS}. Got {lstm_units}."
-            
-        return True, None
+        if not (TrainingConfigValidator.MIN_EPOCHS <= epochs <= TrainingConfigValidator.MAX_EPOCHS):
+            return False, f"Epochs must be between {TrainingConfigValidator.MIN_EPOCHS} and {TrainingConfigValidator.MAX_EPOCHS}."
+        
+        if not (TrainingConfigValidator.MIN_LSTM_UNITS <= lstm_units <= TrainingConfigValidator.MAX_LSTM_UNITS):
+            return False, f"LSTM Units must be between {TrainingConfigValidator.MIN_LSTM_UNITS} and {TrainingConfigValidator.MAX_LSTM_UNITS}."
+
+        return True, ""
 
 
 class ForecastConfigValidator:
     """Validates forecast generation parameters."""
+    
+    # DEMO MODE: Allow 7 days
+    MIN_DAYS_AHEAD = 7
+    MAX_DAYS_AHEAD = 365
+    DEFAULT_DAYS_AHEAD = 7
+    SUPPORTED_DAYS_AHEAD = (7, 30, 60, 90, 180, 365)
 
-    SUPPORTED_DAYS_AHEAD = tuple(settings.FORECAST_SUPPORTED_HORIZONS)
-    DEFAULT_DAYS_AHEAD = settings.FORECAST_DEFAULT_HORIZON
-
-    @classmethod
-    def validate(cls, days_ahead: int) -> Tuple[bool, Optional[str]]:
-        if not 1 <= days_ahead <= settings.FORECAST_MAX_HORIZON:
-            return False, (
-                f"Days ahead must be between 1 and "
-                f"{settings.FORECAST_MAX_HORIZON}. Got {days_ahead}."
-            )
-        return True, None
+    @staticmethod
+    def validate(days_ahead: int) -> Tuple[bool, str]:
+        if not (ForecastConfigValidator.MIN_DAYS_AHEAD <= days_ahead <= ForecastConfigValidator.MAX_DAYS_AHEAD):
+            return False, f"Forecast horizon must be between {ForecastConfigValidator.MIN_DAYS_AHEAD} and {ForecastConfigValidator.MAX_DAYS_AHEAD} days."
+        
+        return True, ""

@@ -223,7 +223,7 @@
                         {% if current_run %}
                             Run #{{ current_run.id }}
                         {% elif not has_enough_data %}
-                            Need ≥60 days of data
+                            Need ≥7 days of data
                         {% else %}
                             Ready to train
                         {% endif %}
@@ -233,7 +233,7 @@
         </div>
     </div>
 
-    <!-- Training Controls -->
+    <!-- Training Controls (UPDATED FOR FAST DEMO) -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="card border-0 shadow-sm">
@@ -241,43 +241,50 @@
                     <h5 class="fw-bold"><i class="bi bi-gear-wide-connected me-2"></i>Model Training</h5>
                 </div>
                 <div class="card-body">
+                    <div class="alert alert-info mb-3">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>Demo Mode:</strong> Using lightweight settings for fast training (5-10 minutes). Perfect for testing with 7 days of data.
+                    </div>
+                    
                     <div class="row align-items-end">
                         <div class="col-md-2">
                             <label class="form-label small text-muted">Lookback Window</label>
                             <select id="lookback" class="form-select" {% if current_run %}disabled{% endif %}>
+                                <option value="3" selected>3 days (Fast)</option>
+                                <option value="7">7 days</option>
+                                <option value="14">14 days</option>
                                 <option value="30">30 days</option>
-                                <option value="60">60 days</option>
-                                <option value="90">90 days</option>
                             </select>
                         </div>
                         <div class="col-md-2">
                             <label class="form-label small text-muted">Epochs</label>
                             <select id="epochs" class="form-select" {% if current_run %}disabled{% endif %}>
-                                <option value="100">100</option>
-                                <option value="200">200</option>
-                                <option value="50">50</option>
+                                <option value="5" selected>5 (Fast - ~5 min)</option>
+                                <option value="10">10</option>
+                                <option value="20">20</option>
+                                <option value="50">50 (Slow)</option>
                             </select>
                         </div>
                         <div class="col-md-2">
                             <label class="form-label small text-muted">LSTM Units</label>
                             <select id="lstm_units" class="form-select" {% if current_run %}disabled{% endif %}>
-                                <option value="64">64</option>
-                                <option value="128">128</option>
+                                <option value="16" selected>16 (Fast)</option>
                                 <option value="32">32</option>
+                                <option value="64">64 (Standard)</option>
                             </select>
                         </div>
                         <div class="col-md-2">
                             <label class="form-label small text-muted">Forecast Horizon</label>
                             <select id="forecast_horizon" class="form-select" {% if not active_model %}disabled{% endif %}>
                                 {% for horizon in forecast_horizon_options %}
-                                <option value="{{ horizon }}" {% if horizon == default_forecast_horizon %}selected{% endif %}>{{ horizon }} days</option>
+                                <option value="{{ horizon }}" {% if horizon == 7 %}selected{% endif %}>{{ horizon }} days</option>
                                 {% endfor %}
                             </select>
                         </div>
                         <div class="col-md-2">
                             <button id="trainBtn" class="btn btn-primary w-100" {% if not has_enough_data or current_run %}disabled{% endif %}>
                                 <i class="bi bi-play-fill me-1"></i>
-                                {% if current_run %}Training in Progress...{% else %}Train Model{% endif %}
+                                {% if current_run %}Training...{% else %}Train Model{% endif %}
                             </button>
                         </div>
                         <div class="col-md-2">
