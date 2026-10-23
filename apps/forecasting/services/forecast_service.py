@@ -1,4 +1,6 @@
 import os
+import base64
+import tempfile
 import numpy as np
 import pandas as pd
 from datetime import datetime, timedelta, date
@@ -88,12 +90,24 @@ class ForecastService:
                 company_id=self.company_id, is_active=True, is_company_wide=True
             ).first()
 
-        if not forecast_model or not forecast_model.model_path:
-            return None
-        if not os.path.exists(forecast_model.model_path):
+        if not forecast_model:
             return None
 
-        self.model = keras.models.load_model(forecast_model.model_path)
+        # NEW: Check for database blob first (persistent across Render restarts)
+        if forecast_model.model_blob:
+            # Decode and save to a temporary file
+            with tempfile.NamedTemporaryFile(suffix=".keras", delete=False) as tmp_file:
+                tmp_file.write(base64.b64decode(forecast_model.model_blob))
+                temp_path = tmp_file.name
+            
+            self.model = keras.models.load_model(temp_path)
+            # Clean up temp file after loading (Keras keeps it in memory)
+            os.unlink(temp_path)
+        elif forecast_model.model_path and os.path.exists(forecast_model.model_path):
+            self.model = keras.models.load_model(forecast_model.model_path)
+        else:
+            return None
+
         self.scaler = self._deserialize_scaler(forecast_model.scaler_config)
         self.feature_names = [f['name'] for f in forecast_model.feature_config]
 
@@ -211,21 +225,10 @@ class ForecastService:
     def _calculate_business_metrics(self) -> Dict:
         """
         Calculate average selling price, cost price, and historical revenue.
-
-        Cost price resolution order:
-          1. PurchaseHistory weighted average (most accurate)
-          2. PurchaseOrderItem weighted average
-          3. Product.cost_price average
-          4. Estimated from selling price using default gross margin (fallback)
-
-        The fallback ensures Expected Profit is NEVER None/blank.
-        When real procurement data becomes available, it automatically takes priority.
         """
         from inventory.models import Product
 
-        # ------------------------------------------------------------------
         # 1. Average Selling Price (weighted from last 90 days of sales)
-        # ------------------------------------------------------------------
         ninety_days_ago = date.today() - timedelta(days=90)
         sales_agg = Sales.objects.filter(
             company_id=self.company_id,
@@ -239,20 +242,17 @@ class ForecastService:
         if sales_agg['total_qty'] and sales_agg['total_amt'] and sales_agg['total_qty'] > 0:
             avg_selling_price = Decimal(str(sales_agg['total_amt'])) / Decimal(str(sales_agg['total_qty']))
         else:
-            # Fallback to Product.base_price average
             products = Product.objects.filter(company_id=self.company_id, base_price__gt=0)
             if products.exists():
                 avg_base = products.aggregate(avg=Avg('base_price'))['avg']
                 if avg_base:
                     avg_selling_price = Decimal(str(avg_base))
 
-        # ------------------------------------------------------------------
         # 2. Average Cost Price (4-source fallback chain)
-        # ------------------------------------------------------------------
         avg_cost_price = Decimal('0.00')
         cost_source = 'none'
 
-        # Source A: PurchaseHistory (most accurate — weighted avg from completed purchases)
+        # Source A: PurchaseHistory
         try:
             from procurement.models import PurchaseHistory
             ph_agg = PurchaseHistory.objects.filter(company_id=self.company_id).aggregate(
@@ -265,7 +265,7 @@ class ForecastService:
         except Exception:
             pass
 
-        # Source B: PurchaseOrderItem (weighted avg from purchase orders)
+        # Source B: PurchaseOrderItem
         if avg_cost_price == Decimal('0.00'):
             try:
                 from procurement.models import PurchaseOrderItem
@@ -281,7 +281,7 @@ class ForecastService:
             except Exception:
                 pass
 
-        # Source C: Product.cost_price (from inventory product profiles)
+        # Source C: Product.cost_price
         if avg_cost_price == Decimal('0.00'):
             products_with_cost = Product.objects.filter(
                 company_id=self.company_id,
@@ -295,14 +295,11 @@ class ForecastService:
                     cost_source = 'product_cost_price'
 
         # Source D: Estimated from selling price using default gross margin
-        # This ensures Expected Profit is NEVER blank/None
         if avg_cost_price == Decimal('0.00') and avg_selling_price > Decimal('0.00'):
             avg_cost_price = avg_selling_price * (Decimal('1') - self.DEFAULT_GROSS_MARGIN)
             cost_source = 'estimated_margin'
 
-        # ------------------------------------------------------------------
         # 3. Historical average daily revenue (last 30 days)
-        # ------------------------------------------------------------------
         thirty_days_ago = date.today() - timedelta(days=30)
         historical_revenue = Sales.objects.filter(
             company_id=self.company_id,
@@ -338,8 +335,6 @@ class ForecastService:
                 qty = round(predictions[i], 2)
                 expected_revenue = Decimal(str(qty)) * avg_price
 
-                # Calculate profit — avg_cost is now guaranteed > 0
-                # thanks to the estimated margin fallback in _calculate_business_metrics
                 expected_profit = None
                 if avg_cost > Decimal('0.00'):
                     expected_profit = (avg_price - avg_cost) * Decimal(str(qty))

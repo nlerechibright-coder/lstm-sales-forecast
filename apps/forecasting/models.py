@@ -76,6 +76,13 @@ class ForecastModel(models.Model):
         help_text="Filesystem path to the saved .keras or .h5 model file"
     )
     
+    # NEW FIELD: Base64 encoded model for persistent storage across Render restarts
+    model_blob = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Base64 encoded .keras model file for persistent storage"
+    )
+    
     scaler_config = models.JSONField(
         default=dict,
         help_text="Serialized MinMaxScaler parameters (feature_ranges, etc.)"
