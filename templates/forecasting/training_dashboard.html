@@ -432,8 +432,8 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('Dashboard JavaScript loaded');
     
     try {
-        // Performance Chart
-        const perfData = {{ model_history|safe }};
+        // Performance Chart - FIXED: Using |json filter to properly convert Python None to JS null
+        const perfData = {{ model_history|default:"[]"|json }};
         console.log('Model history data:', perfData);
         
         if (perfData && perfData.length > 0) {
