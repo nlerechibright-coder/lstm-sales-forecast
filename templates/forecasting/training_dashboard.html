@@ -427,13 +427,18 @@
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+<!-- Safely serialize Python data to JSON for JavaScript -->
+{{ model_history|json_script:"perf-data" }}
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Dashboard JavaScript loaded');
     
     try {
-        // Performance Chart - FIXED: Using |json filter to properly convert Python None to JS null
-        const perfData = {{ model_history|default:"[]"|json }};
+        // Performance Chart - FIXED: Using json_script to safely parse Python data into JS
+        const perfDataElement = document.getElementById('perf-data');
+        const perfData = perfDataElement ? JSON.parse(perfDataElement.textContent) : [];
         console.log('Model history data:', perfData);
         
         if (perfData && perfData.length > 0) {
